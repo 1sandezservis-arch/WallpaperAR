@@ -109,8 +109,11 @@ class ArRenderer(
     }
 
     private fun drawCamera(frame: Frame) {
-        ndcBuffer.rewind()
-        texBuffer.rewind()
+        ndcBuffer.clear()
+        ndcBuffer.put(ndcCoords)
+        ndcBuffer.position(0)
+
+        texBuffer.clear()
 
         frame.transformCoordinates2d(
             Coordinates2d.OPENGL_NORMALIZED_DEVICE_COORDINATES,
@@ -119,17 +122,22 @@ class ArRenderer(
             cameraTexCoords
         )
 
+        texBuffer.put(cameraTexCoords)
+        texBuffer.position(0)
+
         GLES20.glDisable(GLES20.GL_DEPTH_TEST)
         GLES20.glUseProgram(cameraProgram)
+
+        // The external camera sampler must read from texture unit 0.
+        val textureUniform = GLES20.glGetUniformLocation(cameraProgram, "u_Texture")
+        GLES20.glUniform1i(textureUniform, 0)
 
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
         GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, cameraTextureId)
 
-        ndcBuffer.position(0)
         GLES20.glEnableVertexAttribArray(cameraPosition)
         GLES20.glVertexAttribPointer(cameraPosition, 2, GLES20.GL_FLOAT, false, 0, ndcBuffer)
 
-        texBuffer.position(0)
         GLES20.glEnableVertexAttribArray(cameraTexCoord)
         GLES20.glVertexAttribPointer(cameraTexCoord, 2, GLES20.GL_FLOAT, false, 0, texBuffer)
 
