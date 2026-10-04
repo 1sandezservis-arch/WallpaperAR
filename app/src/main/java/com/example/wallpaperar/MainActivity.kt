@@ -106,17 +106,18 @@ class MainActivity : Activity() {
         val top = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(20, 18, 20, 0)
+            setPadding(18, 14, 18, 0)
         }
 
         val title = TextView(this).apply {
             text = "WALLPAPER AR"
             setTextColor(Color.WHITE)
-            textSize = 24f
+            textSize = 23f
             gravity = Gravity.CENTER
+            includeFontPadding = false
             setShadowLayer(8f, 0f, 2f, Color.BLACK)
         }
-        top.addView(title, LinearLayout.LayoutParams(-1, 40))
+        top.addView(title, LinearLayout.LayoutParams(-1, 34))
 
         status = TextView(this).apply {
             text = "Наведіть камеру на стіну"
@@ -126,90 +127,168 @@ class MainActivity : Activity() {
             includeFontPadding = false
             setShadowLayer(7f, 0f, 2f, Color.BLACK)
         }
-        top.addView(status, LinearLayout.LayoutParams(-1, 34))
-
-        val topParams = FrameLayout.LayoutParams(-1, -2).apply { gravity = Gravity.TOP }
-        root.addView(top, topParams)
+        top.addView(status, LinearLayout.LayoutParams(-1, 30))
+        root.addView(top, FrameLayout.LayoutParams(-1, 70).apply { gravity = Gravity.TOP })
 
         val reticle = TextView(this).apply {
             text = "＋"
             setTextColor(Color.WHITE)
-            textSize = 42f
+            textSize = 40f
             gravity = Gravity.CENTER
             setShadowLayer(8f, 0f, 2f, Color.BLACK)
         }
-        val reticleParams = FrameLayout.LayoutParams(70, 70).apply {
-            gravity = Gravity.CENTER
-        }
-        root.addView(reticle, reticleParams)
+        root.addView(reticle, FrameLayout.LayoutParams(60, 60).apply { gravity = Gravity.CENTER })
 
         val bottom = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(14, 12, 14, 16)
-            setBackgroundColor(Color.argb(220, 20, 20, 20))
+            setPadding(12, 9, 12, 12)
+            setBackgroundColor(Color.argb(238, 18, 18, 18))
         }
 
-        selectedText = TextView(this).apply {
-            text = selectedLabel()
+        val galleryTitle = TextView(this).apply {
+            text = "Оберіть шпалери"
             setTextColor(Color.WHITE)
-            textSize = 16f
-            gravity = Gravity.CENTER
+            textSize = 14f
+            gravity = Gravity.CENTER_VERTICAL
+            includeFontPadding = false
         }
-        bottom.addView(selectedText, LinearLayout.LayoutParams(-1, 34))
+        bottom.addView(galleryTitle, LinearLayout.LayoutParams(-1, 25))
+
+        selectedText = TextView(this).apply {
+            text = wallpaperNames[selectedWallpaper]
+            setTextColor(Color.LTGRAY)
+            textSize = 12f
+            gravity = Gravity.CENTER_VERTICAL
+            includeFontPadding = false
+        }
+        bottom.addView(selectedText, LinearLayout.LayoutParams(-1, 23))
+
+        val scroll = HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            overScrollMode = View.OVER_SCROLL_NEVER
+        }
 
         val catalog = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER
+            gravity = Gravity.CENTER_VERTICAL
         }
+
         wallpaperNames.indices.forEach { index ->
-            val b = Button(this).apply {
-                text = "${index + 1}"
-                textSize = 13f
-                setTextColor(Color.BLACK)
-                setBackgroundColor(
-                    when (index) {
-                        0 -> Color.rgb(224, 216, 202)
-                        1 -> Color.rgb(220, 225, 232)
-                        2 -> Color.rgb(150, 145, 135)
-                        else -> Color.rgb(165, 190, 165)
-                    }
-                )
+            val item = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER
+                setPadding(2, 2, 2, 2)
                 setOnClickListener { selectWallpaper(index) }
             }
-            catalog.addView(b, LinearLayout.LayoutParams(0, 48, 1f).apply {
-                setMargins(4, 0, 4, 0)
+
+            val preview = ImageView(this).apply {
+                setImageBitmap(createWallpaperPreview(index))
+                scaleType = ImageView.ScaleType.CENTER_CROP
+                setBackgroundColor(Color.DKGRAY)
+                contentDescription = wallpaperNames[index]
+            }
+            item.addView(preview, LinearLayout.LayoutParams(78, 58))
+
+            val number = TextView(this).apply {
+                text = (index + 1).toString()
+                setTextColor(Color.WHITE)
+                textSize = 10f
+                gravity = Gravity.CENTER
+                includeFontPadding = false
+            }
+            item.addView(number, LinearLayout.LayoutParams(78, 16))
+            catalog.addView(item, LinearLayout.LayoutParams(82, 78).apply {
+                setMargins(2, 0, 2, 0)
             })
         }
-        bottom.addView(catalog, LinearLayout.LayoutParams(-1, 56))
 
-        val place = Button(this).apply {
-            text = "РОЗМІСТИТИ НА СТІНІ"
-            textSize = 15f
-            setTextColor(Color.BLACK)
-            setBackgroundColor(Color.rgb(255, 196, 0))
-            setOnClickListener { renderer.requestPlacement(surfaceView.width / 2f, surfaceView.height / 2f) }
-        }
-        bottom.addView(place, LinearLayout.LayoutParams(-1, 52).apply {
-            setMargins(4, 8, 4, 0)
-        })
+        scroll.addView(catalog, HorizontalScrollView.LayoutParams(-2, 78))
+        bottom.addView(scroll, LinearLayout.LayoutParams(-1, 80))
 
-        val clear = TextView(this).apply {
-            text = "Очистити"
+        val hint = TextView(this).apply {
+            text = "Натисніть на стіну, щоб розмістити"
             setTextColor(Color.LTGRAY)
-            textSize = 13f
+            textSize = 11f
             gravity = Gravity.CENTER
-            setOnClickListener { renderer.clearWallpaper() }
+            includeFontPadding = false
         }
-        bottom.addView(clear, LinearLayout.LayoutParams(-1, 30).apply {
-            setMargins(4, 4, 4, 0)
+        bottom.addView(hint, LinearLayout.LayoutParams(-1, 22))
+
+        root.addView(bottom, FrameLayout.LayoutParams(-1, 229).apply {
+            gravity = Gravity.BOTTOM
         })
 
-        val bottomParams = FrameLayout.LayoutParams(-1, -2).apply {
-            gravity = Gravity.BOTTOM
+        ViewCompat.setOnApplyWindowInsetsListener(root) { _, insets ->
+            val nav = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
+            bottom.setPadding(12, 9, 12, 12 + nav.bottom)
+            insets
         }
-        root.addView(bottom, bottomParams)
 
         setContentView(root)
+    }
+
+    private fun createWallpaperPreview(style: Int): Bitmap {
+        val width = 156
+        val height = 116
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+
+        when (style) {
+            0 -> {
+                canvas.drawColor(Color.rgb(226, 218, 204))
+                paint.color = Color.rgb(196, 185, 168)
+                for (x in 0 until width step 18) canvas.drawRect(x.toFloat(), 0f, (x + 2).toFloat(), height.toFloat(), paint)
+            }
+            1 -> {
+                canvas.drawColor(Color.rgb(224, 228, 232))
+                paint.color = Color.rgb(185, 194, 204)
+                paint.strokeWidth = 2f
+                for (x in -height until width step 30) {
+                    canvas.drawLine(x.toFloat(), 0f, (x + height).toFloat(), height.toFloat(), paint)
+                    canvas.drawLine((x + height).toFloat(), 0f, x.toFloat(), height.toFloat(), paint)
+                }
+            }
+            2 -> {
+                canvas.drawColor(Color.rgb(157, 151, 141))
+                paint.color = Color.rgb(113, 108, 101)
+                for (y in 0 until height step 14) canvas.drawRect(0f, y.toFloat(), width.toFloat(), (y + 2).toFloat(), paint)
+                paint.color = Color.rgb(182, 174, 162)
+                for (x in 0 until width step 32) canvas.drawRect(x.toFloat(), 0f, (x + 2).toFloat(), height.toFloat(), paint)
+            }
+            3 -> {
+                canvas.drawColor(Color.rgb(177, 197, 176))
+                paint.color = Color.rgb(145, 170, 145)
+                for (x in 0 until width step 22) canvas.drawRect(x.toFloat(), 0f, (x + 7).toFloat(), height.toFloat(), paint)
+            }
+            4 -> {
+                canvas.drawColor(Color.rgb(188, 184, 177))
+                paint.color = Color.rgb(162, 157, 150)
+                for (x in 0 until width step 28) canvas.drawRect(x.toFloat(), 0f, (x + 1).toFloat(), height.toFloat(), paint)
+                paint.color = Color.rgb(207, 202, 194)
+                for (y in 0 until height step 20) canvas.drawRect(0f, y.toFloat(), width.toFloat(), (y + 1).toFloat(), paint)
+            }
+            5 -> {
+                canvas.drawColor(Color.rgb(232, 229, 222))
+                paint.color = Color.rgb(174, 169, 161)
+                paint.strokeWidth = 3f
+                for (x in -height until width step 38) canvas.drawLine(x.toFloat(), 0f, (x + height).toFloat(), height.toFloat(), paint)
+            }
+            6 -> {
+                canvas.drawColor(Color.rgb(213, 207, 197))
+                paint.color = Color.rgb(166, 157, 146)
+                for (x in 0 until width step 18) canvas.drawRect(x.toFloat(), 0f, (x + 4).toFloat(), height.toFloat(), paint)
+            }
+            else -> {
+                canvas.drawColor(Color.rgb(173, 139, 104))
+                paint.color = Color.rgb(133, 103, 76)
+                for (x in 0 until width step 24) canvas.drawRect(x.toFloat(), 0f, (x + 3).toFloat(), height.toFloat(), paint)
+                paint.color = Color.rgb(194, 159, 121)
+                for (x in 0 until width step 48) canvas.drawCircle(x.toFloat() + 8f, 35f, 2.5f, paint)
+            }
+        }
+
+        return bitmap
     }
 
     private fun selectWallpaper(index: Int) {
