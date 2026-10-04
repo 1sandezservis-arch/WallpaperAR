@@ -107,7 +107,7 @@ class MainActivity : Activity() {
         }
 
         status = TextView(this).apply {
-            text = "Wallpaper AR"
+            text = "Wallpaper AR • v1.31"
             setTextColor(Color.WHITE)
             textSize = 22f
             gravity = Gravity.CENTER
@@ -137,9 +137,9 @@ class MainActivity : Activity() {
     fun setWallStatus(found: Boolean, trackingState: TrackingState, verticalCount: Int, totalCount: Int) {
         runOnUiThread {
             status.text = if (found) {
-                "Стіна знайдена ✓  | AR: $trackingState | V:$verticalCount"
+                "Стіна знайдена ✓\nBUILD 1.31 | AR: $trackingState | V:$verticalCount / P:$totalCount"
             } else {
-                "Шукаю вертикальну стіну…\nAR: $trackingState | V:$verticalCount / P:$totalCount"
+                "Шукаю вертикальну стіну…\nBUILD 1.31 | AR: $trackingState | V:$verticalCount / P:$totalCount"
             }
         }
     }
