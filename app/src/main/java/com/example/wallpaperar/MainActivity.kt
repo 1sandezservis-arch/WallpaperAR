@@ -158,15 +158,30 @@ class MainActivity : Activity() {
         }
         bottom.addView(selectedText, LinearLayout.LayoutParams(-1, 34))
 
+        val scroll = HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            overScrollMode = ScrollView.OVER_SCROLL_NEVER
+        }
+
         val catalog = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER
+            gravity = Gravity.CENTER_VERTICAL
         }
+
         wallpaperNames.indices.forEach { index ->
-            val b = Button(this).apply {
+            val card = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER
+                setPadding(4, 4, 4, 4)
+                setBackgroundColor(Color.rgb(45, 45, 45))
+                setOnClickListener { selectWallpaper(index) }
+            }
+
+            val preview = TextView(this).apply {
                 text = "${index + 1}"
-                textSize = 13f
-                setTextColor(Color.BLACK)
+                textSize = 22f
+                setTextColor(Color.DKGRAY)
+                gravity = Gravity.CENTER
                 setBackgroundColor(
                     when (index) {
                         0 -> Color.rgb(224, 216, 202)
@@ -175,13 +190,26 @@ class MainActivity : Activity() {
                         else -> Color.rgb(165, 190, 165)
                     }
                 )
-                setOnClickListener { selectWallpaper(index) }
             }
-            catalog.addView(b, LinearLayout.LayoutParams(0, 48, 1f).apply {
-                setMargins(4, 0, 4, 0)
+            card.addView(preview, LinearLayout.LayoutParams(112, 62))
+
+            val name = TextView(this).apply {
+                text = wallpaperNames[index]
+                textSize = 11f
+                setTextColor(Color.WHITE)
+                gravity = Gravity.CENTER
+                maxLines = 1
+                ellipsize = android.text.TextUtils.TruncateAt.END
+            }
+            card.addView(name, LinearLayout.LayoutParams(112, 24))
+
+            catalog.addView(card, LinearLayout.LayoutParams(120, 92).apply {
+                setMargins(3, 0, 3, 0)
             })
         }
-        bottom.addView(catalog, LinearLayout.LayoutParams(-1, 56))
+
+        scroll.addView(catalog, HorizontalScrollView.LayoutParams(-2, 92))
+        bottom.addView(scroll, LinearLayout.LayoutParams(-1, 94))
 
         val place = Button(this).apply {
             text = "РОЗМІСТИТИ НА СТІНІ"
