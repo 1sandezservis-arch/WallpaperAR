@@ -87,8 +87,7 @@ class MainActivity : Activity() {
 
             val name = e.javaClass.simpleName
             val message = e.message?.replace("\n", " ")?.take(180) ?: "без опису"
-            status.text = "TEST 1.34 • ARCore: $name
-$message"
+            status.text = "TEST 1.34 • ARCore: $name\n$message"
         }
     }
 
@@ -134,11 +133,9 @@ $message"
     fun setWallStatus(found: Boolean, trackingState: TrackingState, verticalCount: Int, totalCount: Int) {
         runOnUiThread {
             status.text = if (found) {
-                "TEST 1.34 • СТІНА ✓
-AR: $trackingState | V:$verticalCount / P:$totalCount"
+                "TEST 1.34 • СТІНА ✓\nAR: $trackingState | V:$verticalCount / P:$totalCount"
             } else {
-                "TEST 1.34 • ШУКАЮ СТІНУ
-AR: $trackingState | V:$verticalCount / P:$totalCount"
+                "TEST 1.34 • ШУКАЮ СТІНУ\nAR: $trackingState | V:$verticalCount / P:$totalCount"
             }
         }
     }
@@ -146,8 +143,7 @@ AR: $trackingState | V:$verticalCount / P:$totalCount"
     fun showRendererError(error: Exception) {
         runOnUiThread {
             val name = error.javaClass.simpleName
-            val message = error.message?.replace("
-", " ")?.take(160) ?: "без опису"
+            val message = error.message?.replace("\n", " ")?.take(160) ?: "без опису"
             status.text = "TEST 1.34 • Помилка: $name\n$message"
         }
     }
