@@ -1,5 +1,9 @@
 package com.example.wallpaperar
 
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Color
 import android.opengl.GLES11Ext
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
@@ -19,12 +23,15 @@ class ArRenderer(
     private var cameraTextureId = 0
     private var cameraProgram = 0
     private var planeProgram = 0
+    private var wallpaperTextureId = 0
 
     private var cameraPosition = 0
     private var cameraTexCoord = 0
     private var planePosition = 0
     private var planeColor = 0
     private var planeMvp = 0
+    private var wallpaperSampler = 0
+    private var planeTexCoord = 0
 
     private val viewMatrix = FloatArray(16)
     private val projectionMatrix = FloatArray(16)
@@ -43,7 +50,9 @@ class ArRenderer(
     private val texBuffer: FloatBuffer = floatBuffer(cameraTexCoords)
 
     private val planeVertices = FloatArray(12)
+    private val planeTexCoords = FloatArray(8)
     private val planeBuffer: FloatBuffer = floatBuffer(planeVertices)
+    private val planeTexBuffer: FloatBuffer = floatBuffer(planeTexCoords)
 
     @Volatile
     private var surfaceReady = false
@@ -68,8 +77,10 @@ class ArRenderer(
 
         planeProgram = createProgram(PLANE_VERTEX_SHADER, PLANE_FRAGMENT_SHADER)
         planePosition = GLES20.glGetAttribLocation(planeProgram, "a_Position")
+        planeTexCoord = GLES20.glGetAttribLocation(planeProgram, "a_TexCoord")
         planeColor = GLES20.glGetUniformLocation(planeProgram, "u_Color")
         planeMvp = GLES20.glGetUniformLocation(planeProgram, "u_Mvp")
+        wallpaperSampler = GLES20.glGetUniformLocation(planeProgram, "u_Texture")
 
         val textures = IntArray(1)
         GLES20.glGenTextures(1, textures, 0)
@@ -80,6 +91,8 @@ class ArRenderer(
         GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR)
         GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE)
         GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE)
+
+        wallpaperTextureId = createWallpaperTexture()
 
         surfaceReady = true
         session?.setCameraTextureName(cameraTextureId)
@@ -190,9 +203,24 @@ class ArRenderer(
         planeVertices[9] = halfX
         planeVertices[10] = 0f
         planeVertices[11] = halfZ
+
+        val uMax = (halfX * 2f).coerceAtLeast(0.1f)
+        val vMax = (halfZ * 2f).coerceAtLeast(0.1f)
+        planeTexCoords[0] = 0f
+        planeTexCoords[1] = vMax
+        planeTexCoords[2] = uMax
+        planeTexCoords[3] = vMax
+        planeTexCoords[4] = 0f
+        planeTexCoords[5] = 0f
+        planeTexCoords[6] = uMax
+        planeTexCoords[7] = 0f
+
         planeBuffer.rewind()
         planeBuffer.put(planeVertices)
         planeBuffer.rewind()
+        planeTexBuffer.rewind()
+        planeTexBuffer.put(planeTexCoords)
+        planeTexBuffer.rewind()
 
         frame.camera.getViewMatrix(viewMatrix, 0)
         frame.camera.getProjectionMatrix(projectionMatrix, 0, 0.01f, 100f)
@@ -206,14 +234,53 @@ class ArRenderer(
 
         GLES20.glUseProgram(planeProgram)
         GLES20.glUniformMatrix4fv(planeMvp, 1, false, mvpMatrix, 0)
-        GLES20.glUniform4f(planeColor, 0.1f, 0.8f, 0.2f, 0.28f)
+        GLES20.glUniform4f(planeColor, 1f, 1f, 1f, 1f)
+
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE1)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, wallpaperTextureId)
+        GLES20.glUniform1i(wallpaperSampler, 1)
 
         GLES20.glEnableVertexAttribArray(planePosition)
         GLES20.glVertexAttribPointer(planePosition, 3, GLES20.GL_FLOAT, false, 0, planeBuffer)
+        GLES20.glEnableVertexAttribArray(planeTexCoord)
+        GLES20.glVertexAttribPointer(planeTexCoord, 2, GLES20.GL_FLOAT, false, 0, planeTexBuffer)
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
         GLES20.glDisableVertexAttribArray(planePosition)
+        GLES20.glDisableVertexAttribArray(planeTexCoord)
 
         GLES20.glDisable(GLES20.GL_BLEND)
+    }
+
+    
+    private fun createWallpaperTexture(): Int {
+        val size = 512
+        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        canvas.drawColor(Color.rgb(224, 216, 202))
+
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        paint.color = Color.rgb(194, 183, 166)
+        paint.strokeWidth = 5f
+        for (x in 0 until size step 32) {
+            canvas.drawRect(x.toFloat(), 0f, (x + 12).toFloat(), size.toFloat(), paint)
+        }
+
+        paint.color = Color.rgb(235, 229, 217)
+        for (x in 0 until size step 32) {
+            canvas.drawRect((x + 12).toFloat(), 0f, (x + 16).toFloat(), size.toFloat(), paint)
+        }
+
+        val texture = IntArray(1)
+        GLES20.glGenTextures(1, texture, 0)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texture[0])
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR_MIPMAP_LINEAR)
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR)
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_REPEAT)
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_REPEAT)
+        android.opengl.GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0)
+        GLES20.glGenerateMipmap(GLES20.GL_TEXTURE_2D)
+        bitmap.recycle()
+        return texture[0]
     }
 
     private fun createProgram(vertexSource: String, fragmentSource: String): Int {
@@ -281,16 +348,21 @@ class ArRenderer(
         private const val PLANE_VERTEX_SHADER = """
             uniform mat4 u_Mvp;
             attribute vec4 a_Position;
+            attribute vec2 a_TexCoord;
+            varying vec2 v_TexCoord;
             void main() {
                 gl_Position = u_Mvp * a_Position;
+                v_TexCoord = a_TexCoord;
             }
         """
 
         private const val PLANE_FRAGMENT_SHADER = """
             precision mediump float;
+            uniform sampler2D u_Texture;
             uniform vec4 u_Color;
+            varying vec2 v_TexCoord;
             void main() {
-                gl_FragColor = u_Color;
+                gl_FragColor = texture2D(u_Texture, v_TexCoord) * u_Color;
             }
         """
     }
