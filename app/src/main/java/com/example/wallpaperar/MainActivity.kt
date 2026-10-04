@@ -3,12 +3,19 @@ package com.example.wallpaperar
 import android.Manifest
 import android.app.Activity
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Paint
 import android.os.Bundle
 import android.view.Gravity
+import android.view.MotionEvent
+import android.view.View
 import android.widget.*
 import android.opengl.GLSurfaceView
 import com.google.ar.core.*
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 
 class MainActivity : Activity() {
     private lateinit var surfaceView: GLSurfaceView
@@ -24,9 +31,13 @@ class MainActivity : Activity() {
         "Бежевий льон",
         "Світла геометрія",
         "Лофт",
-        "Зелений мінімалізм"
+        "Зелений мінімалізм",
+        "Теплий бетон",
+        "Мармур",
+        "Вертикальні смуги",
+        "Дерев'яні панелі"
     )
-    private val wallpaperPrices = intArrayOf(399, 449, 499, 429)
+    private val wallpaperPrices = intArrayOf(399, 449, 499, 429, 459, 549, 419, 579)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,7 +51,7 @@ class MainActivity : Activity() {
         }
 
         surfaceView.setOnTouchListener { _, event ->
-            if (event.action == android.view.MotionEvent.ACTION_UP) {
+            if (event.action == MotionEvent.ACTION_UP) {
                 renderer.requestPlacement(event.x, event.y)
             }
             true
