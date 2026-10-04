@@ -147,16 +147,26 @@ class ArRenderer(
         GLES20.glDisableVertexAttribArray(cameraTexCoord)
     }
 
-    private fun drawDetectedWall(frame: Frame) {
-        val planes = frame.getUpdatedTrackables(Plane::class.java)
-        val plane = planes.firstOrNull {
+    
+    private fun sTrackedVerticalPlane(frame: Frame): Plane? {
+        val s = session ?: return null
+        return s.getAllTrackables(Plane::class.java).firstOrNull {
             it.trackingState == TrackingState.TRACKING &&
             it.type == Plane.Type.VERTICAL &&
-            it.subsumedBy == null
-        } ?: frame.getUpdatedTrackables(Plane::class.java).firstOrNull {
-            it.trackingState == TrackingState.TRACKING &&
-            it.type == Plane.Type.VERTICAL
+            it.subsumedBy == null &&
+            it.polygonVertexBuffer != null
         }
+    }
+
+    private fun drawDetectedWall(frame: Frame) {
+        // Use all known planes, not only planes updated in this frame.
+        // A tracked wall can remain valid for many frames without being "updated".
+        val plane = sTrackedVerticalPlane(frame)
+            ?: frame.getUpdatedTrackables(Plane::class.java).firstOrNull {
+                it.trackingState == TrackingState.TRACKING &&
+                it.type == Plane.Type.VERTICAL &&
+                it.subsumedBy == null
+            }
 
         if (plane == null) {
             activity.setWallStatus(false)
