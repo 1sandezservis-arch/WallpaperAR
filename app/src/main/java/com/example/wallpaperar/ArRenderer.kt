@@ -166,8 +166,7 @@ class ArRenderer(
         return s.getAllTrackables(Plane::class.java).firstOrNull {
             it.trackingState == TrackingState.TRACKING &&
             it.type == Plane.Type.VERTICAL &&
-            it.subsumedBy == null &&
-            it.polygonVertexBuffer != null
+            it.subsumedBy == null
         }
     }
 
