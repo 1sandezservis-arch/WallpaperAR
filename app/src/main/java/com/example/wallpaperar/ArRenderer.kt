@@ -4,8 +4,6 @@ import android.opengl.GLES11Ext
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
-import android.view.Display
-import android.view.Surface
 import com.google.ar.core.*
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -52,6 +50,9 @@ class ArRenderer(
 
     fun attachSession(value: Session) {
         session = value
+        if (surfaceReady && cameraTextureId != 0) {
+            value.setCameraTextureName(cameraTextureId)
+        }
     }
 
     fun clearSession() {
@@ -99,10 +100,6 @@ class ArRenderer(
         if (!surfaceReady) return
 
         try {
-            if (cameraTextureId != 0) {
-                s.setCameraTextureName(cameraTextureId)
-            }
-
             val frame = s.update()
             drawCamera(frame)
             drawDetectedWall(frame)
@@ -178,10 +175,6 @@ class ArRenderer(
         planeBuffer.rewind()
         planeBuffer.put(planeVertices)
         planeBuffer.rewind()
-
-        plane.centerPose.toMatrix(modelMatrix, 0)
-        Matrix.multiplyMM(mvpMatrix, 0, viewMatrix, 0, modelMatrix, 0)
-        Matrix.multiplyMM(mvpMatrix, 0, projectionMatrix, 0, mvpMatrix, 0)
 
         frame.camera.getViewMatrix(viewMatrix, 0)
         frame.camera.getProjectionMatrix(projectionMatrix, 0, 0.01f, 100f)
