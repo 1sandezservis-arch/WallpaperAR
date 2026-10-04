@@ -78,7 +78,6 @@ class MainActivity : Activity() {
             }
 
             session?.resume()
-            status.text = "Камера запускається…"
         } catch (e: Exception) {
             renderer.clearSession()
             session?.close()
@@ -132,15 +131,12 @@ class MainActivity : Activity() {
         setContentView(root)
     }
 
-    fun setWallStatus(found: Boolean) {
-        if (found == lastWallState) return
-        lastWallState = found
-
+    fun setWallStatus(found: Boolean, trackingState: TrackingState, verticalCount: Int) {
         runOnUiThread {
             status.text = if (found) {
-                "Стіна знайдена ✓"
+                "Стіна знайдена ✓  | AR: $trackingState | V:$verticalCount"
             } else {
-                "Шукаю вертикальну стіну…"
+                "Шукаю вертикальну стіну…\nAR: $trackingState | V:$verticalCount"
             }
         }
     }
