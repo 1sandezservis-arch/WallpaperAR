@@ -14,6 +14,8 @@ class MainActivity : Activity() {
     private lateinit var surfaceView: GLSurfaceView
     private lateinit var renderer: ArRenderer
     private lateinit var status: TextView
+    private lateinit var diagnostic: TextView
+    private var lastDiagnostic = ""
     private var session: Session? = null
     private var userRequestedInstall = true
 
@@ -114,7 +116,17 @@ class MainActivity : Activity() {
             setShadowLayer(8f, 0f, 2f, Color.BLACK)
         }
 
-        panel.addView(status, LinearLayout.LayoutParams(-1, LinearLayout.LayoutParams.WRAP_CONTENT))
+        panel.addView(status, LinearLayout.LayoutParams(-1, 42))
+
+        diagnostic = TextView(this).apply {
+            text = "ШУКАЮ СТІНУ\nAR: — | V:0 / P:0"
+            setTextColor(Color.WHITE)
+            textSize = 18f
+            gravity = Gravity.CENTER
+            setShadowLayer(8f, 0f, 2f, Color.BLACK)
+            includeFontPadding = false
+        }
+        panel.addView(diagnostic, LinearLayout.LayoutParams(-1, 72))
 
         val hint = TextView(this).apply {
             text = "Наведіть камеру на стіну і повільно рухайте телефоном."
@@ -135,12 +147,17 @@ class MainActivity : Activity() {
     }
 
     fun setWallStatus(found: Boolean, trackingState: TrackingState, failureReason: TrackingFailureReason, verticalCount: Int, totalCount: Int) {
+        val text = if (found) {
+            "СТІНА ✓\nAR: $trackingState | $failureReason | V:$verticalCount / P:$totalCount"
+        } else {
+            "ШУКАЮ СТІНУ\nAR: $trackingState | $failureReason | V:$verticalCount / P:$totalCount"
+        }
+
+        if (text == lastDiagnostic) return
+        lastDiagnostic = text
+
         runOnUiThread {
-            status.text = if (found) {
-                "TEST 1.35 • СТІНА ✓\nAR: $trackingState | $failureReason | V:$verticalCount / P:$totalCount"
-            } else {
-                "TEST 1.35 • ШУКАЮ СТІНУ\nAR: $trackingState | $failureReason | V:$verticalCount / P:$totalCount"
-            }
+            diagnostic.text = text
         }
     }
 
