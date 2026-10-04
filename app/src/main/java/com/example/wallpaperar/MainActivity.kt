@@ -12,6 +12,7 @@ import com.google.ar.core.*
 class MainActivity : Activity() {
     private var session: Session? = null
     private lateinit var status: TextView
+    private var installRequested = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
