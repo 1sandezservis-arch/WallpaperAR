@@ -139,6 +139,20 @@ class ArRenderer(private val activity: MainActivity) : GLSurfaceView.Renderer {
             val frame = s.update()
             drawCamera(frame)
 
+            if (frame.camera.trackingState == TrackingState.PAUSED) {
+                val reason = frame.camera.trackingFailureReason
+                val message = when (reason) {
+                    TrackingFailureReason.INSUFFICIENT_LIGHT -> "Замало світла — наведіть на освітлену стіну"
+                    TrackingFailureReason.INSUFFICIENT_FEATURES -> "Мало деталей — повільно рухайте телефоном по стіні"
+                    TrackingFailureReason.EXCESSIVE_MOTION -> "Рух надто швидкий — рухайте телефоном повільніше"
+                    TrackingFailureReason.INSUFFICIENT_EXCESSIVE_MOTION -> "Стабілізуйте телефон і рухайте повільно"
+                    else -> "AR ще калібрується — повільно рухайте телефоном"
+                }
+                activity.setArStatus(message)
+            } else if (frame.camera.trackingState == TrackingState.TRACKING && lastStatus.startsWith("AR ще калібрується")) {
+                activity.setArStatus("AR готовий ✓ — наведіть хрестик на стіну")
+            }
+
             if (placementRequested) {
                 placementRequested = false
                 placeFromHitTest(frame, requestedX, requestedY)
