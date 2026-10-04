@@ -79,8 +79,6 @@ class MainActivity : Activity() {
             session!!.configure(config)
             session!!.resume()
             status.text = "ARCore працює ✓"
-        } catch (e: UnavailableDeviceNotCompatibleException) {
-            status.text = "Цей телефон не підтримує ARCore"
         } catch (e: Exception) {
             status.text = "Помилка ARCore: ${e.javaClass.simpleName}"
         }
