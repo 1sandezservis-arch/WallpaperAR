@@ -134,12 +134,12 @@ class MainActivity : Activity() {
         setContentView(root)
     }
 
-    fun setWallStatus(found: Boolean, trackingState: TrackingState, verticalCount: Int) {
+    fun setWallStatus(found: Boolean, trackingState: TrackingState, verticalCount: Int, totalCount: Int) {
         runOnUiThread {
             status.text = if (found) {
                 "Стіна знайдена ✓  | AR: $trackingState | V:$verticalCount"
             } else {
-                "Шукаю вертикальну стіну…\nAR: $trackingState | V:$verticalCount"
+                "Шукаю вертикальну стіну…\nAR: $trackingState | V:$verticalCount / P:$totalCount"
             }
         }
     }
