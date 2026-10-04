@@ -86,8 +86,7 @@ class MainActivity : Activity() {
             session = null
 
             val name = e.javaClass.simpleName
-            val message = e.message?.replace("
-", " ")?.take(180) ?: "без опису"
+            val message = e.message?.replace("\n", " ")?.take(180) ?: "без опису"
             status.text = "TEST 1.34 • ARCore: $name
 $message"
         }
@@ -149,8 +148,7 @@ AR: $trackingState | V:$verticalCount / P:$totalCount"
             val name = error.javaClass.simpleName
             val message = error.message?.replace("
 ", " ")?.take(160) ?: "без опису"
-            status.text = "TEST 1.34 • Помилка: $name
-$message"
+            status.text = "TEST 1.34 • Помилка: $name\n$message"
         }
     }
 
