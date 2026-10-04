@@ -157,10 +157,7 @@ class ArRenderer(private val activity: MainActivity) : GLSurfaceView.Renderer {
         }
 
         val hits = frame.hitTest(x, y)
-        var selectedHit: HitResult? = null
-
-        // Prefer a vertical plane: it gives the best wall geometry.
-        selectedHit = hits.firstOrNull {
+        var selectedHit: HitResult? = hits.firstOrNull {
             val trackable = it.trackable
             trackable is Plane &&
                 trackable.trackingState == TrackingState.TRACKING &&
@@ -168,13 +165,23 @@ class ArRenderer(private val activity: MainActivity) : GLSurfaceView.Renderer {
                 trackable.isPoseInPolygon(it.hitPose)
         }
 
-        // Depth hit-tests work on supported devices even when ARCore has not
-        // produced a complete plane yet.
+        // If the reticle is not exactly over the detected plane polygon,
+        // use the largest tracked vertical plane instead. This makes wall
+        // placement reliable even when the user presses slightly off-center.
+        if (selectedHit == null) {
+            val wallPlane = sTrackedVerticalPlanes(frame).maxByOrNull { it.extentX * it.extentZ }
+            if (wallPlane != null) {
+                anchor?.detach()
+                anchor = wallPlane.createAnchor(wallPlane.centerPose)
+                activity.setArStatus("Стіна знайдена ✓  • шпалери розміщено")
+                return
+            }
+        }
+
         if (selectedHit == null) {
             selectedHit = hits.firstOrNull { it.trackable is DepthPoint }
         }
 
-        // Final fallback: a feature point with an estimated surface normal.
         if (selectedHit == null) {
             selectedHit = hits.firstOrNull {
                 val trackable = it.trackable
@@ -185,7 +192,7 @@ class ArRenderer(private val activity: MainActivity) : GLSurfaceView.Renderer {
         }
 
         if (selectedHit == null) {
-            activity.setArStatus("Стіна не знайдена — наведіть на фактурну ділянку і рухайте телефоном")
+            activity.setArStatus("Стіна ще не визначена — повільно наведіть камеру на стіну")
             return
         }
 
@@ -193,6 +200,14 @@ class ArRenderer(private val activity: MainActivity) : GLSurfaceView.Renderer {
         anchor = selectedHit.createAnchor()
         activity.setArStatus("Шпалери розміщено ✓  • натисніть іншу точку для переміщення")
     }
+
+    private fun sTrackedVerticalPlanes(frame: Frame): List<Plane> =
+        frame.getUpdatedTrackables(Plane::class.java).filter {
+            it.trackingState == TrackingState.TRACKING &&
+                it.type == Plane.Type.VERTICAL &&
+                it.extentX > 0.3f &&
+                it.extentZ > 0.3f
+        }
 
     private fun drawCamera(frame: Frame) {
         ndcBuffer.rewind()
