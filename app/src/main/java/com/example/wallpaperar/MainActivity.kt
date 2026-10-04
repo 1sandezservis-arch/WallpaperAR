@@ -53,8 +53,19 @@ class MainActivity : Activity() {
     private fun startAr() {
         try {
             val availability = ArCoreApk.getInstance().checkAvailability(this)
+            if (availability.isTransient) {
+                status.text = "Перевіряю підтримку ARCore…"
+                window.decorView.postDelayed({ startAr() }, 1000)
+                return
+            }
             if (!availability.isSupported) {
-                status.text = "Цей телефон не підтримує ARCore"
+                status.text = "ARCore не доступний на цьому телефоні"
+                return
+            }
+            val installStatus = ArCoreApk.getInstance().requestInstall(this, !installRequested)
+            if (installStatus == ArCoreApk.InstallStatus.INSTALL_REQUESTED) {
+                installRequested = true
+                status.text = "Встановіть або оновіть Google Play Services for AR"
                 return
             }
             session?.close()
@@ -72,5 +83,16 @@ class MainActivity : Activity() {
     }
 
     override fun onPause() { super.onPause(); try { session?.pause() } catch (_: Exception) {} }
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 10 && grantResults.isNotEmpty() &&
+            grantResults[0] == PackageManager.PERMISSION_GRANTED
+        ) {
+            startAr()
+        } else if (requestCode == 10) {
+            status.text = "Потрібен дозвіл на камеру"
+        }
+    }
+
     override fun onDestroy() { session?.close(); super.onDestroy() }
 }
