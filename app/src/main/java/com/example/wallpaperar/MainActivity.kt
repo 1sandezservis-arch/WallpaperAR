@@ -30,14 +30,14 @@ class MainActivity : Activity() {
         }
         status = TextView(this).apply {
             text = "Wallpaper AR"
-            textColor = Color.WHITE
+            setTextColor(Color.WHITE)
             textSize = 24f
             gravity = Gravity.CENTER
         }
         root.addView(status, LinearLayout.LayoutParams(-1, 100))
         val info = TextView(this).apply {
             text = "Це тест ARCore. Після запуску наведіть телефон на вертикальну стіну."
-            textColor = Color.WHITE
+            setTextColor(Color.WHITE)
             textSize = 17f
             gravity = Gravity.CENTER
         }
