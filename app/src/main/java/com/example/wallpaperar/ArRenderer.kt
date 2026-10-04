@@ -202,7 +202,7 @@ class ArRenderer(private val activity: MainActivity) : GLSurfaceView.Renderer {
     }
 
     private fun sTrackedVerticalPlanes(frame: Frame): List<Plane> =
-        frame.getUpdatedTrackables(Plane::class.java).filter {
+        session?.getAllTrackables(Plane::class.java)?.filter {
             it.trackingState == TrackingState.TRACKING &&
                 it.type == Plane.Type.VERTICAL &&
                 it.extentX > 0.3f &&
