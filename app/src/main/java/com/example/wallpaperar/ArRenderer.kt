@@ -220,7 +220,7 @@ class ArRenderer(private val activity: MainActivity) : GLSurfaceView.Renderer {
                 it.type == Plane.Type.VERTICAL &&
                 it.extentX > 0.3f &&
                 it.extentZ > 0.3f
-        }
+        } ?: emptyList()
 
     private fun drawCamera(frame: Frame) {
         ndcBuffer.rewind()
