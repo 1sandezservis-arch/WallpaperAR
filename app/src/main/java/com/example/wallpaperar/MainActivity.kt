@@ -53,7 +53,7 @@ class MainActivity : Activity() {
     private fun ensureArCore() {
         try {
             if (session == null) {
-                status.text = "TEST 1.33 • Перевіряю ARCore…"
+                status.text = "TEST 1.34 • Перевіряю ARCore…"
 
                 when (ArCoreApk.getInstance().requestInstall(this, userRequestedInstall)) {
                     ArCoreApk.InstallStatus.INSTALLED -> {
@@ -73,7 +73,7 @@ class MainActivity : Activity() {
 
                     ArCoreApk.InstallStatus.INSTALL_REQUESTED -> {
                         userRequestedInstall = false
-                        status.text = "TEST 1.33 • Встановлення ARCore…"
+                        status.text = "TEST 1.34 • Встановлення ARCore…"
                         return
                     }
                 }
@@ -86,8 +86,10 @@ class MainActivity : Activity() {
             session = null
 
             val name = e.javaClass.simpleName
-            val message = e.message?.replace("\n", " ")?.take(180) ?: "без опису"
-            status.text = "TEST 1.33 • ARCore: $name\n$message"
+            val message = e.message?.replace("
+", " ")?.take(180) ?: "без опису"
+            status.text = "TEST 1.34 • ARCore: $name
+$message"
         }
     }
 
@@ -103,14 +105,14 @@ class MainActivity : Activity() {
         }
 
         status = TextView(this).apply {
-            text = "Wallpaper AR • TEST 1.33"
+            text = "Wallpaper AR • TEST 1.34"
             setTextColor(Color.WHITE)
             textSize = 22f
             gravity = Gravity.CENTER
             setShadowLayer(8f, 0f, 2f, Color.BLACK)
         }
 
-        panel.addView(status, LinearLayout.LayoutParams(-1, 90))
+        panel.addView(status, LinearLayout.LayoutParams(-1, LinearLayout.LayoutParams.WRAP_CONTENT))
 
         val hint = TextView(this).apply {
             text = "Наведіть камеру на стіну і повільно рухайте телефоном."
@@ -120,7 +122,7 @@ class MainActivity : Activity() {
             setShadowLayer(8f, 0f, 2f, Color.BLACK)
         }
 
-        panel.addView(hint, LinearLayout.LayoutParams(-1, 80))
+        panel.addView(hint, LinearLayout.LayoutParams(-1, LinearLayout.LayoutParams.WRAP_CONTENT))
 
         val params = FrameLayout.LayoutParams(-1, -2).apply {
             gravity = Gravity.TOP
@@ -133,9 +135,11 @@ class MainActivity : Activity() {
     fun setWallStatus(found: Boolean, trackingState: TrackingState, verticalCount: Int, totalCount: Int) {
         runOnUiThread {
             status.text = if (found) {
-                "TEST 1.33 • СТІНА ✓\nAR: $trackingState | V:$verticalCount / P:$totalCount"
+                "TEST 1.34 • СТІНА ✓
+AR: $trackingState | V:$verticalCount / P:$totalCount"
             } else {
-                "TEST 1.33 • ШУКАЮ СТІНУ\nAR: $trackingState | V:$verticalCount / P:$totalCount"
+                "TEST 1.34 • ШУКАЮ СТІНУ
+AR: $trackingState | V:$verticalCount / P:$totalCount"
             }
         }
     }
@@ -143,8 +147,10 @@ class MainActivity : Activity() {
     fun showRendererError(error: Exception) {
         runOnUiThread {
             val name = error.javaClass.simpleName
-            val message = error.message?.replace("\n", " ")?.take(160) ?: "без опису"
-            status.text = "TEST 1.33 • Помилка: $name\n$message"
+            val message = error.message?.replace("
+", " ")?.take(160) ?: "без опису"
+            status.text = "TEST 1.34 • Помилка: $name
+$message"
         }
     }
 
@@ -162,7 +168,7 @@ class MainActivity : Activity() {
             surfaceView.onResume()
             ensureArCore()
         } else if (requestCode == 10) {
-            status.text = "TEST 1.33 • Потрібен дозвіл на камеру"
+            status.text = "TEST 1.34 • Потрібен дозвіл на камеру"
         }
     }
 
