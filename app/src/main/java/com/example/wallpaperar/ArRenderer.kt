@@ -57,10 +57,17 @@ class ArRenderer(
     @Volatile
     private var surfaceReady = false
 
+    private var surfaceWidth = 0
+    private var surfaceHeight = 0
+
     fun attachSession(value: Session) {
         session = value
         if (surfaceReady && cameraTextureId != 0) {
             value.setCameraTextureName(cameraTextureId)
+        }
+        if (surfaceWidth > 0 && surfaceHeight > 0) {
+            val rotation = activity.windowManager.defaultDisplay.rotation
+            value.setDisplayGeometry(rotation, surfaceWidth, surfaceHeight)
         }
     }
 
@@ -99,6 +106,8 @@ class ArRenderer(
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
+        surfaceWidth = width
+        surfaceHeight = height
         GLES20.glViewport(0, 0, width, height)
 
         val s = session ?: return
