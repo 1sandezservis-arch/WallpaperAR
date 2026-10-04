@@ -4,7 +4,7 @@
 
     <application
         android:theme="@style/AppTheme"
-        android:label="Wallpaper AR"
+        android:label="Wallpaper AR TEST 1.32"
         android:allowBackup="false">
         <meta-data
             android:name="com.google.ar.core"
