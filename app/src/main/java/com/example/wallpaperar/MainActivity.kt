@@ -16,7 +16,6 @@ class MainActivity : Activity() {
     private lateinit var status: TextView
     private var session: Session? = null
     private var userRequestedInstall = true
-    private var lastWallState = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,7 +53,7 @@ class MainActivity : Activity() {
     private fun ensureArCore() {
         try {
             if (session == null) {
-                status.text = "Перевіряю ARCore…"
+                status.text = "TEST 1.33 • Перевіряю ARCore…"
 
                 when (ArCoreApk.getInstance().requestInstall(this, userRequestedInstall)) {
                     ArCoreApk.InstallStatus.INSTALLED -> {
@@ -74,7 +73,7 @@ class MainActivity : Activity() {
 
                     ArCoreApk.InstallStatus.INSTALL_REQUESTED -> {
                         userRequestedInstall = false
-                        status.text = "Встановлення ARCore…"
+                        status.text = "TEST 1.33 • Встановлення ARCore…"
                         return
                     }
                 }
@@ -88,17 +87,14 @@ class MainActivity : Activity() {
 
             val name = e.javaClass.simpleName
             val message = e.message?.replace("\n", " ")?.take(180) ?: "без опису"
-            status.text = "ARCore: $name\n$message"
+            status.text = "TEST 1.33 • ARCore: $name\n$message"
         }
     }
 
     private fun buildUi() {
         val root = FrameLayout(this)
 
-        root.addView(
-            surfaceView,
-            FrameLayout.LayoutParams(-1, -1)
-        )
+        root.addView(surfaceView, FrameLayout.LayoutParams(-1, -1))
 
         val panel = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -107,7 +103,7 @@ class MainActivity : Activity() {
         }
 
         status = TextView(this).apply {
-            text = "Wallpaper AR • v1.31"
+            text = "Wallpaper AR • TEST 1.33"
             setTextColor(Color.WHITE)
             textSize = 22f
             gravity = Gravity.CENTER
@@ -137,9 +133,9 @@ class MainActivity : Activity() {
     fun setWallStatus(found: Boolean, trackingState: TrackingState, verticalCount: Int, totalCount: Int) {
         runOnUiThread {
             status.text = if (found) {
-                "Стіна знайдена ✓\nBUILD 1.31 | AR: $trackingState | V:$verticalCount / P:$totalCount"
+                "TEST 1.33 • СТІНА ✓\nAR: $trackingState | V:$verticalCount / P:$totalCount"
             } else {
-                "Шукаю вертикальну стіну…\nBUILD 1.31 | AR: $trackingState | V:$verticalCount / P:$totalCount"
+                "TEST 1.33 • ШУКАЮ СТІНУ\nAR: $trackingState | V:$verticalCount / P:$totalCount"
             }
         }
     }
@@ -148,7 +144,7 @@ class MainActivity : Activity() {
         runOnUiThread {
             val name = error.javaClass.simpleName
             val message = error.message?.replace("\n", " ")?.take(160) ?: "без опису"
-            status.text = "Помилка рендерингу: $name\n$message"
+            status.text = "TEST 1.33 • Помилка: $name\n$message"
         }
     }
 
@@ -166,7 +162,7 @@ class MainActivity : Activity() {
             surfaceView.onResume()
             ensureArCore()
         } else if (requestCode == 10) {
-            status.text = "Потрібен дозвіл на камеру"
+            status.text = "TEST 1.33 • Потрібен дозвіл на камеру"
         }
     }
 
