@@ -6,7 +6,6 @@ import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Bundle
 import android.view.Gravity
-import android.view.Surface
 import android.widget.*
 import android.opengl.GLSurfaceView
 import com.google.ar.core.*
@@ -17,7 +16,7 @@ class MainActivity : Activity() {
     private lateinit var status: TextView
     private var session: Session? = null
     private var userRequestedInstall = true
-    private var lastWallState = false
+    private var lastWallState = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,8 +41,8 @@ class MainActivity : Activity() {
             return
         }
 
-        ensureArCore()
         surfaceView.onResume()
+        ensureArCore()
     }
 
     override fun onPause() {
@@ -165,8 +164,8 @@ class MainActivity : Activity() {
             grantResults.isNotEmpty() &&
             grantResults[0] == PackageManager.PERMISSION_GRANTED
         ) {
-            ensureArCore()
             surfaceView.onResume()
+            ensureArCore()
         } else if (requestCode == 10) {
             status.text = "Потрібен дозвіл на камеру"
         }
