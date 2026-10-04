@@ -208,12 +208,12 @@ class ArRenderer(
 
         if (plane == null) {
             val state = frame.camera.trackingState
-            activity.setWallStatus(false, state, 0, sTrackedPlaneCount())
+            activity.setWallStatus(false, state, frame.camera.trackingFailureReason, 0, sTrackedPlaneCount())
             return
         }
 
         val verticalCount = sTrackedVerticalPlaneCount()
-        activity.setWallStatus(true, frame.camera.trackingState, verticalCount, sTrackedPlaneCount())
+        activity.setWallStatus(true, frame.camera.trackingState, frame.camera.trackingFailureReason, verticalCount, sTrackedPlaneCount())
 
         val halfX = plane.extentX.coerceAtMost(4f) / 2f
         val halfZ = plane.extentZ.coerceAtMost(4f) / 2f
