@@ -40,8 +40,10 @@ class MainActivity : Activity() {
             return
         }
 
-        surfaceView.onResume()
-        ensureArCore()
+        if (ensureArCore()) {
+            // ARCore must be resumed before GLSurfaceView starts rendering frames.
+            surfaceView.onResume()
+        }
     }
 
     override fun onPause() {
@@ -50,10 +52,10 @@ class MainActivity : Activity() {
         super.onPause()
     }
 
-    private fun ensureArCore() {
+    private fun ensureArCore(): Boolean {
         try {
             if (session == null) {
-                status.text = "TEST 1.34 • Перевіряю ARCore…"
+                status.text = "TEST 1.35 • Перевіряю ARCore…"
 
                 when (ArCoreApk.getInstance().requestInstall(this, userRequestedInstall)) {
                     ArCoreApk.InstallStatus.INSTALLED -> {
@@ -73,13 +75,14 @@ class MainActivity : Activity() {
 
                     ArCoreApk.InstallStatus.INSTALL_REQUESTED -> {
                         userRequestedInstall = false
-                        status.text = "TEST 1.34 • Встановлення ARCore…"
-                        return
+                        status.text = "TEST 1.35 • Встановлення ARCore…"
+                        return false
                     }
                 }
             }
 
             session?.resume()
+            return true
         } catch (e: Exception) {
             renderer.clearSession()
             session?.close()
@@ -87,7 +90,8 @@ class MainActivity : Activity() {
 
             val name = e.javaClass.simpleName
             val message = e.message?.replace("\n", " ")?.take(180) ?: "без опису"
-            status.text = "TEST 1.34 • ARCore: $name\n$message"
+            status.text = "TEST 1.35 • ARCore: $name\n$message"
+            return false
         }
     }
 
@@ -103,7 +107,7 @@ class MainActivity : Activity() {
         }
 
         status = TextView(this).apply {
-            text = "Wallpaper AR • TEST 1.34"
+            text = "Wallpaper AR • TEST 1.35"
             setTextColor(Color.WHITE)
             textSize = 22f
             gravity = Gravity.CENTER
@@ -130,12 +134,12 @@ class MainActivity : Activity() {
         setContentView(root)
     }
 
-    fun setWallStatus(found: Boolean, trackingState: TrackingState, verticalCount: Int, totalCount: Int) {
+    fun setWallStatus(found: Boolean, trackingState: TrackingState, failureReason: TrackingFailureReason, verticalCount: Int, totalCount: Int) {
         runOnUiThread {
             status.text = if (found) {
-                "TEST 1.34 • СТІНА ✓\nAR: $trackingState | V:$verticalCount / P:$totalCount"
+                "TEST 1.35 • СТІНА ✓\nAR: $trackingState | $failureReason | V:$verticalCount / P:$totalCount"
             } else {
-                "TEST 1.34 • ШУКАЮ СТІНУ\nAR: $trackingState | V:$verticalCount / P:$totalCount"
+                "TEST 1.35 • ШУКАЮ СТІНУ\nAR: $trackingState | $failureReason | V:$verticalCount / P:$totalCount"
             }
         }
     }
@@ -144,7 +148,7 @@ class MainActivity : Activity() {
         runOnUiThread {
             val name = error.javaClass.simpleName
             val message = error.message?.replace("\n", " ")?.take(160) ?: "без опису"
-            status.text = "TEST 1.34 • Помилка: $name\n$message"
+            status.text = "TEST 1.35 • Помилка: $name\n$message"
         }
     }
 
@@ -159,10 +163,11 @@ class MainActivity : Activity() {
             grantResults.isNotEmpty() &&
             grantResults[0] == PackageManager.PERMISSION_GRANTED
         ) {
-            surfaceView.onResume()
-            ensureArCore()
+            if (ensureArCore()) {
+                surfaceView.onResume()
+            }
         } else if (requestCode == 10) {
-            status.text = "TEST 1.34 • Потрібен дозвіл на камеру"
+            status.text = "TEST 1.35 • Потрібен дозвіл на камеру"
         }
     }
 
