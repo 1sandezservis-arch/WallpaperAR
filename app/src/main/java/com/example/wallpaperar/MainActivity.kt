@@ -100,6 +100,8 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density + 0.5f).toInt()
+
     private fun buildUi() {
         val root = FrameLayout(this)
         root.addView(surfaceView, FrameLayout.LayoutParams(-1, -1))
@@ -107,62 +109,60 @@ class MainActivity : Activity() {
         val top = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(20, 18, 20, 0)
+            setPadding(dp(16), dp(10), dp(16), 0)
         }
-
         val title = TextView(this).apply {
             text = "WALLPAPER AR"
             setTextColor(Color.WHITE)
-            textSize = 24f
+            textSize = 22f
             gravity = Gravity.CENTER
-            setShadowLayer(8f, 0f, 2f, Color.BLACK)
+            includeFontPadding = false
+            setShadowLayer(dp(5).toFloat(), 0f, dp(1).toFloat(), Color.BLACK)
         }
-        top.addView(title, LinearLayout.LayoutParams(-1, 40))
+        top.addView(title, LinearLayout.LayoutParams(-1, dp(34)))
 
         status = TextView(this).apply {
             text = "Наведіть камеру на стіну"
             setTextColor(Color.WHITE)
-            textSize = 15f
+            textSize = 14f
             gravity = Gravity.CENTER
             includeFontPadding = false
-            setShadowLayer(7f, 0f, 2f, Color.BLACK)
+            maxLines = 2
+            setShadowLayer(dp(4).toFloat(), 0f, dp(1).toFloat(), Color.BLACK)
         }
-        top.addView(status, LinearLayout.LayoutParams(-1, 34))
-
-        val topParams = FrameLayout.LayoutParams(-1, -2).apply { gravity = Gravity.TOP }
-        root.addView(top, topParams)
+        top.addView(status, LinearLayout.LayoutParams(-1, dp(42)))
+        root.addView(top, FrameLayout.LayoutParams(-1, dp(82)).apply { gravity = Gravity.TOP })
 
         val reticle = TextView(this).apply {
             text = "＋"
             setTextColor(Color.WHITE)
-            textSize = 42f
+            textSize = 38f
             gravity = Gravity.CENTER
-            setShadowLayer(8f, 0f, 2f, Color.BLACK)
+            setShadowLayer(dp(5).toFloat(), 0f, dp(1).toFloat(), Color.BLACK)
         }
-        val reticleParams = FrameLayout.LayoutParams(70, 70).apply {
-            gravity = Gravity.CENTER
-        }
-        root.addView(reticle, reticleParams)
+        root.addView(reticle, FrameLayout.LayoutParams(dp(56), dp(56)).apply { gravity = Gravity.CENTER })
 
         val bottom = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(14, 12, 14, 16)
-            setBackgroundColor(Color.argb(220, 20, 20, 20))
+            setPadding(dp(10), dp(8), dp(10), dp(10))
+            setBackgroundColor(Color.argb(235, 18, 18, 18))
         }
 
         selectedText = TextView(this).apply {
             text = selectedLabel()
             setTextColor(Color.WHITE)
-            textSize = 16f
+            textSize = 14f
             gravity = Gravity.CENTER
+            includeFontPadding = false
+            maxLines = 1
+            ellipsize = android.text.TextUtils.TruncateAt.END
         }
-        bottom.addView(selectedText, LinearLayout.LayoutParams(-1, 34))
+        bottom.addView(selectedText, LinearLayout.LayoutParams(-1, dp(30)))
 
         val scroll = HorizontalScrollView(this).apply {
             isHorizontalScrollBarEnabled = false
             overScrollMode = ScrollView.OVER_SCROLL_NEVER
         }
-
         val catalog = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -172,14 +172,14 @@ class MainActivity : Activity() {
             val card = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 gravity = Gravity.CENTER
-                setPadding(4, 4, 4, 4)
-                setBackgroundColor(Color.rgb(45, 45, 45))
+                setPadding(dp(3), dp(3), dp(3), dp(3))
+                setBackgroundColor(if (index == selectedWallpaper) Color.rgb(90, 90, 90) else Color.rgb(42, 42, 42))
                 setOnClickListener { selectWallpaper(index) }
             }
 
             val preview = TextView(this).apply {
                 text = "${index + 1}"
-                textSize = 22f
+                textSize = 20f
                 setTextColor(Color.DKGRAY)
                 gravity = Gravity.CENTER
                 setBackgroundColor(
@@ -191,53 +191,54 @@ class MainActivity : Activity() {
                     }
                 )
             }
-            card.addView(preview, LinearLayout.LayoutParams(112, 62))
+            card.addView(preview, LinearLayout.LayoutParams(dp(78), dp(52)))
 
             val name = TextView(this).apply {
                 text = wallpaperNames[index]
-                textSize = 11f
+                textSize = 10f
                 setTextColor(Color.WHITE)
                 gravity = Gravity.CENTER
                 maxLines = 1
                 ellipsize = android.text.TextUtils.TruncateAt.END
+                includeFontPadding = false
             }
-            card.addView(name, LinearLayout.LayoutParams(112, 24))
+            card.addView(name, LinearLayout.LayoutParams(dp(78), dp(20)))
 
-            catalog.addView(card, LinearLayout.LayoutParams(120, 92).apply {
-                setMargins(3, 0, 3, 0)
+            catalog.addView(card, LinearLayout.LayoutParams(dp(84), dp(80)).apply {
+                setMargins(dp(3), 0, dp(3), 0)
             })
         }
 
-        scroll.addView(catalog, HorizontalScrollView.LayoutParams(-2, 92))
-        bottom.addView(scroll, LinearLayout.LayoutParams(-1, 94))
+        scroll.addView(catalog, HorizontalScrollView.LayoutParams(-2, dp(82)))
+        bottom.addView(scroll, LinearLayout.LayoutParams(-1, dp(84)))
 
         val place = Button(this).apply {
             text = "РОЗМІСТИТИ НА СТІНІ"
-            textSize = 15f
+            textSize = 13f
+            minHeight = 0
+            minWidth = 0
             setTextColor(Color.BLACK)
             setBackgroundColor(Color.rgb(255, 196, 0))
             setOnClickListener { renderer.requestPlacement(surfaceView.width / 2f, surfaceView.height / 2f) }
         }
-        bottom.addView(place, LinearLayout.LayoutParams(-1, 52).apply {
-            setMargins(4, 8, 4, 0)
+        bottom.addView(place, LinearLayout.LayoutParams(-1, dp(44)).apply {
+            setMargins(dp(2), dp(6), dp(2), 0)
         })
 
         val clear = TextView(this).apply {
             text = "Очистити"
             setTextColor(Color.LTGRAY)
-            textSize = 13f
+            textSize = 11f
             gravity = Gravity.CENTER
             setOnClickListener { renderer.clearWallpaper() }
         }
-        bottom.addView(clear, LinearLayout.LayoutParams(-1, 30).apply {
-            setMargins(4, 4, 4, 0)
+        bottom.addView(clear, LinearLayout.LayoutParams(-1, dp(24)).apply {
+            setMargins(dp(2), dp(2), dp(2), 0)
         })
 
-        val bottomParams = FrameLayout.LayoutParams(-1, -2).apply {
+        root.addView(bottom, FrameLayout.LayoutParams(-1, dp(194)).apply {
             gravity = Gravity.BOTTOM
-        }
-        root.addView(bottom, bottomParams)
-
+        })
         setContentView(root)
     }
 
