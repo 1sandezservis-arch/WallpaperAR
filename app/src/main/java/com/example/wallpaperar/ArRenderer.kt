@@ -60,6 +60,9 @@ class ArRenderer(private val activity: MainActivity) : GLSurfaceView.Renderer {
     private var surfaceHeight = 0
     private var anchor: Anchor? = null
     private var lastStatus = ""
+    private var trackingSinceMs = 0L
+    private var pausedSinceMs = 0L
+    private var stableTracking = false
 
     fun attachSession(value: Session) {
         session = value
@@ -139,18 +142,11 @@ class ArRenderer(private val activity: MainActivity) : GLSurfaceView.Renderer {
             val frame = s.update()
             drawCamera(frame)
 
-            if (frame.camera.trackingState == TrackingState.PAUSED) {
-                val reason = frame.camera.trackingFailureReason.toString()
-                val message = when (reason) {
-                    "INSUFFICIENT_LIGHT" -> "Замало світла — наведіть на освітлену стіну"
-                    "INSUFFICIENT_FEATURES" -> "Мало деталей — повільно рухайте телефоном по стіні"
-                    "EXCESSIVE_MOTION" -> "Рух надто швидкий — рухайте телефоном повільніше"
-                    else -> "AR ще калібрується — повільно рухайте телефоном"
-                }
-                activity.setArStatus(message)
-            } else if (frame.camera.trackingState == TrackingState.TRACKING) {
-                activity.setArStatus("AR готовий ✓ — наведіть хрестик на стіну")
-            }
+            // ARCore can briefly switch between TRACKING and PAUSED while
+            // refining the pose. Do not expose those frame-to-frame changes
+            // directly in the UI, otherwise the status flickers several times
+            // per second. Require a stable state before changing the message.
+            updateStableTrackingStatus(frame.camera)
 
             if (placementRequested) {
                 placementRequested = false
@@ -160,6 +156,41 @@ class ArRenderer(private val activity: MainActivity) : GLSurfaceView.Renderer {
             drawWallpaper(frame)
         } catch (e: Exception) {
             activity.setArStatus("AR помилка: ${e.javaClass.simpleName}")
+        }
+    }
+
+
+    private fun updateStableTrackingStatus(camera: Camera) {
+        val now = android.os.SystemClock.elapsedRealtime()
+
+        if (camera.trackingState == TrackingState.TRACKING) {
+            if (trackingSinceMs == 0L) trackingSinceMs = now
+            pausedSinceMs = 0L
+
+            // Once tracking is stable, keep the "ready" state through short
+            // ARCore pauses caused by normal pose refinement.
+            if (!stableTracking && now - trackingSinceMs >= 700L) {
+                stableTracking = true
+                activity.setArStatus("AR готовий ✓ — наведіть хрестик на стіну")
+            }
+        } else {
+            if (pausedSinceMs == 0L) pausedSinceMs = now
+            trackingSinceMs = 0L
+
+            // Only leave "ready" after a real, sustained tracking loss.
+            if (stableTracking && now - pausedSinceMs < 1500L) return
+
+            if (!stableTracking && now - pausedSinceMs < 500L) return
+
+            stableTracking = false
+            val reason = camera.trackingFailureReason.toString()
+            val message = when (reason) {
+                "INSUFFICIENT_LIGHT" -> "Замало світла — наведіть на освітлену стіну"
+                "INSUFFICIENT_FEATURES" -> "Мало деталей — повільно рухайте телефоном по стіні"
+                "EXCESSIVE_MOTION" -> "Рух надто швидкий — рухайте телефоном повільніше"
+                else -> "AR ще калібрується — повільно рухайте телефоном"
+            }
+            activity.setArStatus(message)
         }
     }
 
