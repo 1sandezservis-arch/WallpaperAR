@@ -22,7 +22,7 @@ class ArRenderer(private val activity: MainActivity) : GLSurfaceView.Renderer {
     private var cameraTextureId = 0
     private var cameraProgram = 0
     private var wallpaperProgram = 0
-    private val wallpaperTextures = IntArray(4)
+    private val wallpaperTextures = IntArray(8)
 
     private var cameraPosition = 0
     private var cameraTexCoord = 0
@@ -329,12 +329,37 @@ class ArRenderer(private val activity: MainActivity) : GLSurfaceView.Renderer {
                 paint.color = Color.rgb(182, 174, 162)
                 for (x in 0 until size step 95) canvas.drawRect(x.toFloat(), 0f, (x + 3).toFloat(), size.toFloat(), paint)
             }
-            else -> {
+            3 -> {
                 canvas.drawColor(Color.rgb(177, 197, 176))
                 paint.color = Color.rgb(145, 170, 145)
                 for (x in 0 until size step 54) canvas.drawRect(x.toFloat(), 0f, (x + 18).toFloat(), size.toFloat(), paint)
                 paint.color = Color.rgb(200, 214, 195)
                 for (x in 0 until size step 54) canvas.drawRect((x + 18).toFloat(), 0f, (x + 25).toFloat(), size.toFloat(), paint)
+            }
+            4 -> {
+                canvas.drawColor(Color.rgb(188, 184, 177))
+                paint.color = Color.rgb(162, 157, 150)
+                for (x in 0 until size step 56) canvas.drawRect(x.toFloat(), 0f, (x + 2).toFloat(), size.toFloat(), paint)
+                paint.color = Color.rgb(207, 202, 194)
+                for (y in 0 until size step 40) canvas.drawRect(0f, y.toFloat(), size.toFloat(), (y + 2).toFloat(), paint)
+            }
+            5 -> {
+                canvas.drawColor(Color.rgb(232, 229, 222))
+                paint.color = Color.rgb(174, 169, 161)
+                paint.strokeWidth = 6f
+                for (x in -size until size * 2 step 76) canvas.drawLine(x.toFloat(), 0f, (x + size).toFloat(), size.toFloat(), paint)
+            }
+            6 -> {
+                canvas.drawColor(Color.rgb(213, 207, 197))
+                paint.color = Color.rgb(166, 157, 146)
+                for (x in 0 until size step 36) canvas.drawRect(x.toFloat(), 0f, (x + 8).toFloat(), size.toFloat(), paint)
+            }
+            else -> {
+                canvas.drawColor(Color.rgb(173, 139, 104))
+                paint.color = Color.rgb(133, 103, 76)
+                for (x in 0 until size step 48) canvas.drawRect(x.toFloat(), 0f, (x + 6).toFloat(), size.toFloat(), paint)
+                paint.color = Color.rgb(194, 159, 121)
+                for (x in 0 until size step 96) canvas.drawCircle(x.toFloat() + 20f, 110f, 6f, paint)
             }
         }
 
