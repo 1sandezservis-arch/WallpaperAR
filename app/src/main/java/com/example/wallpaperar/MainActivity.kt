@@ -61,8 +61,11 @@ class MainActivity : Activity() {
                         session = Session(this)
 
                         val config = Config(session).apply {
-                            planeFindingMode = Config.PlaneFindingMode.VERTICAL
+                            planeFindingMode = Config.PlaneFindingMode.HORIZONTAL_AND_VERTICAL
                             focusMode = Config.FocusMode.AUTO
+                            if (Session.isDepthModeSupported(this, Config.DepthMode.AUTOMATIC)) {
+                                depthMode = Config.DepthMode.AUTOMATIC
+                            }
                         }
 
                         session!!.configure(config)
