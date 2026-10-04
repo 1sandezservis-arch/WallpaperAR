@@ -140,15 +140,15 @@ class ArRenderer(private val activity: MainActivity) : GLSurfaceView.Renderer {
             drawCamera(frame)
 
             if (frame.camera.trackingState == TrackingState.PAUSED) {
-                val reason = frame.camera.trackingFailureReason
+                val reason = frame.camera.trackingFailureReason.toString()
                 val message = when (reason) {
-                    TrackingFailureReason.INSUFFICIENT_LIGHT -> "Замало світла — наведіть на освітлену стіну"
-                    TrackingFailureReason.INSUFFICIENT_FEATURES -> "Мало деталей — повільно рухайте телефоном по стіні"
-                    TrackingFailureReason.EXCESSIVE_MOTION -> "Рух надто швидкий — рухайте телефоном повільніше"
+                    "INSUFFICIENT_LIGHT" -> "Замало світла — наведіть на освітлену стіну"
+                    "INSUFFICIENT_FEATURES" -> "Мало деталей — повільно рухайте телефоном по стіні"
+                    "EXCESSIVE_MOTION" -> "Рух надто швидкий — рухайте телефоном повільніше"
                     else -> "AR ще калібрується — повільно рухайте телефоном"
                 }
                 activity.setArStatus(message)
-            } else if (frame.camera.trackingState == TrackingState.TRACKING && lastStatus.startsWith("AR ще калібрується")) {
+            } else if (frame.camera.trackingState == TrackingState.TRACKING) {
                 activity.setArStatus("AR готовий ✓ — наведіть хрестик на стіну")
             }
 
