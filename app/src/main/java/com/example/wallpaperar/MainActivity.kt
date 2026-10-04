@@ -52,38 +52,40 @@ class MainActivity : Activity() {
     }
 
     private fun startAr() {
+        if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(arrayOf(Manifest.permission.CAMERA), 10)
+            return
+        }
+
         try {
-            val availability = ArCoreApk.getInstance().checkAvailability(this)
-            if (availability.isTransient) {
-                status.text = "Перевіряю підтримку ARCore…"
-                window.decorView.postDelayed({ startAr() }, 1000)
-                return
-            }
-            if (!availability.isSupported) {
-                status.text = "ARCore не доступний на цьому телефоні"
-                return
-            }
+            status.text = "Перевіряю та запускаю ARCore…"
+
             val installStatus = ArCoreApk.getInstance().requestInstall(this, !installRequested)
+
             if (installStatus == ArCoreApk.InstallStatus.INSTALL_REQUESTED) {
                 installRequested = true
                 status.text = "Встановіть або оновіть Google Play Services for AR"
                 return
             }
+
             session?.close()
             session = Session(this)
+
             val config = Config(session).apply {
                 planeFindingMode = Config.PlaneFindingMode.VERTICAL
                 focusMode = Config.FocusMode.AUTO
             }
+
             session!!.configure(config)
             session!!.resume()
             status.text = "ARCore працює ✓"
+        } catch (e: UnavailableDeviceNotCompatibleException) {
+            status.text = "Цей телефон не підтримує ARCore"
         } catch (e: Exception) {
             status.text = "Помилка ARCore: ${e.javaClass.simpleName}"
         }
     }
 
-    override fun onPause() { super.onPause(); try { session?.pause() } catch (_: Exception) {} }
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == 10 && grantResults.isNotEmpty() &&
