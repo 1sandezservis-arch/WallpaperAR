@@ -170,6 +170,15 @@ class ArRenderer(
     }
 
     
+    private fun sTrackedVerticalPlaneCount(): Int {
+        val s = session ?: return 0
+        return s.getAllTrackables(Plane::class.java).count {
+            it.trackingState == TrackingState.TRACKING &&
+            it.type == Plane.Type.VERTICAL &&
+            it.subsumedBy == null
+        }
+    }
+
     private fun sTrackedVerticalPlane(frame: Frame): Plane? {
         val s = session ?: return null
         return s.getAllTrackables(Plane::class.java).firstOrNull {
@@ -190,11 +199,13 @@ class ArRenderer(
             }
 
         if (plane == null) {
-            activity.setWallStatus(false)
+            val state = frame.camera.trackingState
+            activity.setWallStatus(false, state, 0)
             return
         }
 
-        activity.setWallStatus(true)
+        val verticalCount = sTrackedVerticalPlaneCount()
+        activity.setWallStatus(true, frame.camera.trackingState, verticalCount)
 
         val halfX = plane.extentX.coerceAtMost(4f) / 2f
         val halfZ = plane.extentZ.coerceAtMost(4f) / 2f
