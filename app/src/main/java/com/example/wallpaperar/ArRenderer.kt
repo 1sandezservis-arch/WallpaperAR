@@ -235,14 +235,25 @@ class ArRenderer(private val activity: MainActivity) : GLSurfaceView.Renderer {
             }
         }
 
+        // Instant Placement fallback: place immediately, then let ARCore refine the pose.
         if (selectedHit == null) {
-            activity.setArStatus("Стіна ще не визначена — повільно наведіть камеру на стіну")
+            val instantHit = frame.hitTestInstantPlacement(x, y, 1.5f).firstOrNull()
+            if (instantHit != null) {
+                anchor?.detach()
+                anchor = instantHit.createAnchor()
+                activity.setArStatus("Шпалери розміщено • калібрую поверхню…")
+                return
+            }
+        }
+
+        if (selectedHit == null) {
+            activity.setArStatus("Наведіть хрестик на стіну та повільно рухайте телефон")
             return
         }
 
         anchor?.detach()
         anchor = selectedHit.createAnchor()
-        activity.setArStatus("Шпалери розміщено ✓  • натисніть іншу точку для переміщення")
+        activity.setArStatus("Шпалери розміщено ✓")
     }
 
     private fun sTrackedVerticalPlanes(frame: Frame): List<Plane> =
