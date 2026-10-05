@@ -11,8 +11,8 @@ android {
         applicationId 'com.sandezservis.wallpaperar'
         minSdk 24
         targetSdk 35
-        versionCode 102
-        versionName '1.1.1'
+        versionCode 103
+        versionName '1.3.0'
     }
 
     compileOptions {
