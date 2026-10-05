@@ -75,7 +75,11 @@ class MainActivity : Activity() {
                         val config = Config(session).apply {
                             planeFindingMode = Config.PlaneFindingMode.HORIZONTAL_AND_VERTICAL
                             focusMode = Config.FocusMode.AUTO
-                            // Depth API disabled for the tracking baseline test. Plane tracking is sufficient for wall placement.
+                            depthMode = if (session!!.isDepthModeSupported(Config.DepthMode.AUTOMATIC))
+                                Config.DepthMode.AUTOMATIC
+                            else
+                                Config.DepthMode.DISABLED
+                            instantPlacementMode = Config.InstantPlacementMode.LOCAL_Y_UP
                         }
                         session!!.configure(config)
                         renderer.attachSession(session!!)
