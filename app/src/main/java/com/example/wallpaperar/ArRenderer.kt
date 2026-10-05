@@ -378,24 +378,26 @@ class ArRenderer(private val activity: MainActivity) : GLSurfaceView.Renderer {
         frame.camera.getProjectionMatrix(projectionMatrix, 0, 0.01f, 100f)
         a.pose.toMatrix(modelMatrix, 0)
 
-        // 2.40 m wide x 2.70 m high virtual wallpaper sheet.
-        // Local Y is the surface normal for ARCore plane/depth hit poses.
+        // ARCore vertical-plane poses use local X/Y as the wall surface;
+        // local Z is the surface normal. Using X/Z here would put the
+        // wallpaper on a horizontal plane (ceiling/floor), which was the
+        // previous orientation bug.
         val halfWidth = 1.20f
         val height = 2.70f
         val normalOffset = 0.008f
 
         wallVertices[0] = -halfWidth
-        wallVertices[1] = normalOffset
-        wallVertices[2] = -height / 2f
+        wallVertices[1] = -height / 2f
+        wallVertices[2] = normalOffset
         wallVertices[3] = halfWidth
-        wallVertices[4] = normalOffset
-        wallVertices[5] = -height / 2f
+        wallVertices[4] = -height / 2f
+        wallVertices[5] = normalOffset
         wallVertices[6] = -halfWidth
-        wallVertices[7] = normalOffset
-        wallVertices[8] = height / 2f
+        wallVertices[7] = height / 2f
+        wallVertices[8] = normalOffset
         wallVertices[9] = halfWidth
-        wallVertices[10] = normalOffset
-        wallVertices[11] = height / 2f
+        wallVertices[10] = height / 2f
+        wallVertices[11] = normalOffset
 
         val repeatX = 2.4f / 0.55f
         val repeatY = 2.7f / 0.55f
