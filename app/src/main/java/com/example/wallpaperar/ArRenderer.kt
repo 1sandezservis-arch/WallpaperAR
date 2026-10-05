@@ -146,13 +146,18 @@ class ArRenderer(private val activity: MainActivity) : GLSurfaceView.Renderer {
             // refining the pose. Do not expose those frame-to-frame changes
             // directly in the UI, otherwise the status flickers several times
             // per second. Require a stable state before changing the message.
-            updateStableTrackingStatus(frame.camera)
+            // Work like a camera mask: show the selected wallpaper immediately,
+            // while ARCore keeps searching for a real wall in the background.
+            if (anchor == null && frame.camera.trackingState == TrackingState.TRACKING) {
+                autoPlaceDetectedWall(frame)
+            }
 
             if (placementRequested) {
                 placementRequested = false
                 placeFromHitTest(frame, requestedX, requestedY)
             }
 
+                if (anchor == null) drawScreenWallpaperPreview()
             drawWallpaper(frame)
         } catch (e: Exception) {
             activity.setArStatus("AR помилка: ${e.javaClass.simpleName}")
@@ -194,9 +199,18 @@ class ArRenderer(private val activity: MainActivity) : GLSurfaceView.Renderer {
         }
     }
 
+    private fun autoPlaceDetectedWall(frame: Frame) {
+        val wallPlane = sTrackedVerticalPlanes(frame).maxByOrNull { it.extentX * it.extentZ }
+            ?: return
+        if (wallPlane.extentX < 0.5f || wallPlane.extentZ < 0.5f) return
+        anchor?.detach()
+        anchor = wallPlane.createAnchor(wallPlane.centerPose)
+        activity.setArStatus("Стіна знайдена ✓")
+    }
+
     private fun placeFromHitTest(frame: Frame, x: Float, y: Float) {
         if (frame.camera.trackingState != TrackingState.TRACKING) {
-            activity.setArStatus("Зачекайте: AR ще калібрується")
+            activity.setArStatus("Наведіть камеру на стіну")
             return
         }
 
@@ -247,7 +261,7 @@ class ArRenderer(private val activity: MainActivity) : GLSurfaceView.Renderer {
         }
 
         if (selectedHit == null) {
-            activity.setArStatus("Наведіть хрестик на стіну та повільно рухайте телефон")
+            activity.setArStatus("Наведіть камеру на стіну")
             return
         }
 
@@ -292,6 +306,62 @@ class ArRenderer(private val activity: MainActivity) : GLSurfaceView.Renderer {
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
         GLES20.glDisableVertexAttribArray(cameraPosition)
         GLES20.glDisableVertexAttribArray(cameraTexCoord)
+    }
+
+    private fun drawScreenWallpaperPreview() {
+        // Fallback mask: the user sees the selected wallpaper immediately,
+        // just like a live AR filter, even before a physical wall is tracked.
+        val left = -0.78f
+        val right = 0.78f
+        val bottom = -0.70f
+        val top = 0.70f
+        wallVertices[0] = left
+        wallVertices[1] = bottom
+        wallVertices[2] = 0f
+        wallVertices[3] = right
+        wallVertices[4] = bottom
+        wallVertices[5] = 0f
+        wallVertices[6] = left
+        wallVertices[7] = top
+        wallVertices[8] = 0f
+        wallVertices[9] = right
+        wallVertices[10] = top
+        wallVertices[11] = 0f
+
+        wallTexCoords[0] = 0f
+        wallTexCoords[1] = 1f
+        wallTexCoords[2] = 1f
+        wallTexCoords[3] = 1f
+        wallTexCoords[4] = 0f
+        wallTexCoords[5] = 0f
+        wallTexCoords[6] = 1f
+        wallTexCoords[7] = 0f
+
+        wallBuffer.rewind()
+        wallBuffer.put(wallVertices)
+        wallBuffer.rewind()
+        wallTexBuffer.rewind()
+        wallTexBuffer.put(wallTexCoords)
+        wallTexBuffer.rewind()
+
+        Matrix.setIdentityM(mvpMatrix, 0)
+        GLES20.glDisable(GLES20.GL_DEPTH_TEST)
+        GLES20.glEnable(GLES20.GL_BLEND)
+        GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA)
+        GLES20.glUseProgram(wallpaperProgram)
+        GLES20.glUniformMatrix4fv(wallMvp, 1, false, mvpMatrix, 0)
+        GLES20.glUniform1f(wallAlpha, 0.48f)
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE1)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, wallpaperTextures[selectedWallpaper])
+        GLES20.glUniform1i(wallSampler, 1)
+        GLES20.glEnableVertexAttribArray(wallPosition)
+        GLES20.glVertexAttribPointer(wallPosition, 3, GLES20.GL_FLOAT, false, 0, wallBuffer)
+        GLES20.glEnableVertexAttribArray(wallTexCoord)
+        GLES20.glVertexAttribPointer(wallTexCoord, 2, GLES20.GL_FLOAT, false, 0, wallTexBuffer)
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
+        GLES20.glDisableVertexAttribArray(wallPosition)
+        GLES20.glDisableVertexAttribArray(wallTexCoord)
+        GLES20.glDisable(GLES20.GL_BLEND)
     }
 
     private fun drawWallpaper(frame: Frame) {
