@@ -165,7 +165,6 @@ class ArRenderer(private val activity: MainActivity) : GLSurfaceView.Renderer {
                 placeFromHitTest(frame, requestedX, requestedY)
             }
 
-                if (anchor == null) drawScreenWallpaperPreview()
             drawWallpaper(frame)
         } catch (e: Exception) {
             activity.setArStatus("AR помилка: ${e.javaClass.simpleName}")
@@ -208,99 +207,64 @@ class ArRenderer(private val activity: MainActivity) : GLSurfaceView.Renderer {
     }
 
     private fun autoPlaceDetectedWall(frame: Frame) {
-        // Prefer the vertical plane directly under the screen reticle. This prevents
-        // ARCore from selecting a different wall simply because it is larger.
+        // Only place on a real, tracked vertical plane. Never use a generic
+        // depth/point/instant-placement fallback for a wall.
         val centerX = surfaceWidth / 2f
         val centerY = surfaceHeight / 2f
-        val hitPlane = frame.hitTest(centerX, centerY).firstOrNull { hit ->
-            val plane = hit.trackable as? Plane
+
+        val hit = frame.hitTest(centerX, centerY).firstOrNull { result ->
+            val plane = result.trackable as? Plane
             plane != null &&
                 plane.trackingState == TrackingState.TRACKING &&
                 plane.type == Plane.Type.VERTICAL &&
-                plane.isPoseInPolygon(hit.hitPose)
-        }?.trackable as? Plane
+                plane.isPoseInPolygon(result.hitPose)
+        }
 
-        val wallPlane = hitPlane ?: sTrackedVerticalPlanes(frame)
-            .maxByOrNull { it.extentX * it.extentZ }
-            ?: return
-
-        if (wallPlane.extentX < 0.5f || wallPlane.extentZ < 0.5f) return
-        anchor?.detach()
-        anchor = wallPlane.createAnchor(wallPlane.centerPose)
-        wallWidthMeters = wallPlane.extentX
-        wallHeightMeters = wallPlane.extentZ
-        activity.setArStatus("Стіна знайдена ✓ — шпалери розміщено")
+        if (hit != null) {
+            val plane = hit.trackable as Plane
+            if (plane.extentX >= 0.5f && plane.extentZ >= 0.5f) {
+                anchor?.detach()
+                anchor = hit.createAnchor()
+                wallWidthMeters = plane.extentX
+                wallHeightMeters = plane.extentZ
+                activity.setArStatus("Стіна знайдена ✓ — наведіть хрестик для розміщення")
+            }
+        }
     }
 
     private fun placeFromHitTest(frame: Frame, x: Float, y: Float) {
         if (frame.camera.trackingState != TrackingState.TRACKING) {
-            activity.setArStatus("Наведіть камеру на стіну")
+            activity.setArStatus("AR ще калібрується — наведіть камеру на стіну")
             return
         }
 
-        val hits = frame.hitTest(x, y)
-        var selectedHit: HitResult? = hits.firstOrNull {
-            val trackable = it.trackable
-            trackable is Plane &&
-                trackable.trackingState == TrackingState.TRACKING &&
-                trackable.type == Plane.Type.VERTICAL &&
-                trackable.isPoseInPolygon(it.hitPose)
-        }
-
-        // If the reticle is not exactly over the detected plane polygon,
-        // use the largest tracked vertical plane instead. This makes wall
-        // placement reliable even when the user presses slightly off-center.
-        if (selectedHit == null) {
-            val wallPlane = sTrackedVerticalPlanes(frame).maxByOrNull { it.extentX * it.extentZ }
-            if (wallPlane != null) {
-                anchor?.detach()
-                anchor = wallPlane.createAnchor(wallPlane.centerPose)
-                wallWidthMeters = wallPlane.extentX
-                wallHeightMeters = wallPlane.extentZ
-                activity.setArStatus("Стіна знайдена ✓  • шпалери розміщено")
-                return
-            }
+        // A wall placement is valid only when ARCore confirms a vertical plane
+        // exactly at the requested screen position.
+        val selectedHit = frame.hitTest(x, y).firstOrNull { result ->
+            val plane = result.trackable as? Plane
+            plane != null &&
+                plane.trackingState == TrackingState.TRACKING &&
+                plane.type == Plane.Type.VERTICAL &&
+                plane.isPoseInPolygon(result.hitPose)
         }
 
         if (selectedHit == null) {
-            selectedHit = hits.firstOrNull { it.trackable is DepthPoint }
+            activity.setArStatus("Стіна ще не визначена — наведіть хрестик на стіну")
+            return
         }
 
-        if (selectedHit == null) {
-            selectedHit = hits.firstOrNull {
-                val trackable = it.trackable
-                trackable is Point &&
-                    trackable.trackingState == TrackingState.TRACKING &&
-                    trackable.orientationMode == Point.OrientationMode.ESTIMATED_SURFACE_NORMAL
-            }
-        }
-
-        // Instant Placement fallback: place immediately, then let ARCore refine the pose.
-        if (selectedHit == null) {
-            val instantHit = frame.hitTestInstantPlacement(x, y, 1.5f).firstOrNull()
-            if (instantHit != null) {
-                anchor?.detach()
-                anchor = instantHit.createAnchor()
-                wallWidthMeters = 2.0f
-                wallHeightMeters = 2.7f
-                activity.setArStatus("Шпалери розміщено • калібрую поверхню…")
-                return
-            }
-        }
-
-        if (selectedHit == null) {
-            activity.setArStatus("Наведіть камеру на стіну")
+        val plane = selectedHit.trackable as Plane
+        if (plane.extentX < 0.5f || plane.extentZ < 0.5f) {
+            activity.setArStatus("Зачекайте — AR ще визначає межі стіни")
             return
         }
 
         anchor?.detach()
         anchor = selectedHit.createAnchor()
-        val hitPlane = selectedHit.trackable as? Plane
-        wallWidthMeters = hitPlane?.extentX?.takeIf { it > 0.5f } ?: 2.0f
-        wallHeightMeters = hitPlane?.extentZ?.takeIf { it > 0.5f } ?: 2.7f
+        wallWidthMeters = plane.extentX
+        wallHeightMeters = plane.extentZ
         activity.setArStatus("Шпалери розміщено ✓")
     }
-
     private fun sTrackedVerticalPlanes(frame: Frame): List<Plane> =
         session?.getAllTrackables(Plane::class.java)?.filter {
             it.trackingState == TrackingState.TRACKING &&
@@ -337,62 +301,6 @@ class ArRenderer(private val activity: MainActivity) : GLSurfaceView.Renderer {
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
         GLES20.glDisableVertexAttribArray(cameraPosition)
         GLES20.glDisableVertexAttribArray(cameraTexCoord)
-    }
-
-    private fun drawScreenWallpaperPreview() {
-        // Fallback mask: the user sees the selected wallpaper immediately,
-        // just like a live AR filter, even before a physical wall is tracked.
-        val left = -0.78f
-        val right = 0.78f
-        val bottom = -0.70f
-        val top = 0.70f
-        wallVertices[0] = left
-        wallVertices[1] = bottom
-        wallVertices[2] = 0f
-        wallVertices[3] = right
-        wallVertices[4] = bottom
-        wallVertices[5] = 0f
-        wallVertices[6] = left
-        wallVertices[7] = top
-        wallVertices[8] = 0f
-        wallVertices[9] = right
-        wallVertices[10] = top
-        wallVertices[11] = 0f
-
-        wallTexCoords[0] = 0f
-        wallTexCoords[1] = 1f
-        wallTexCoords[2] = 1f
-        wallTexCoords[3] = 1f
-        wallTexCoords[4] = 0f
-        wallTexCoords[5] = 0f
-        wallTexCoords[6] = 1f
-        wallTexCoords[7] = 0f
-
-        wallBuffer.rewind()
-        wallBuffer.put(wallVertices)
-        wallBuffer.rewind()
-        wallTexBuffer.rewind()
-        wallTexBuffer.put(wallTexCoords)
-        wallTexBuffer.rewind()
-
-        Matrix.setIdentityM(mvpMatrix, 0)
-        GLES20.glDisable(GLES20.GL_DEPTH_TEST)
-        GLES20.glEnable(GLES20.GL_BLEND)
-        GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA)
-        GLES20.glUseProgram(wallpaperProgram)
-        GLES20.glUniformMatrix4fv(wallMvp, 1, false, mvpMatrix, 0)
-        GLES20.glUniform1f(wallAlpha, 0.48f)
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE1)
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, wallpaperTextures[selectedWallpaper])
-        GLES20.glUniform1i(wallSampler, 1)
-        GLES20.glEnableVertexAttribArray(wallPosition)
-        GLES20.glVertexAttribPointer(wallPosition, 3, GLES20.GL_FLOAT, false, 0, wallBuffer)
-        GLES20.glEnableVertexAttribArray(wallTexCoord)
-        GLES20.glVertexAttribPointer(wallTexCoord, 2, GLES20.GL_FLOAT, false, 0, wallTexBuffer)
-        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
-        GLES20.glDisableVertexAttribArray(wallPosition)
-        GLES20.glDisableVertexAttribArray(wallTexCoord)
-        GLES20.glDisable(GLES20.GL_BLEND)
     }
 
     private fun drawWallpaper(frame: Frame) {
