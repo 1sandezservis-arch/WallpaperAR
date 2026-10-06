@@ -59,6 +59,9 @@ class ArRenderer(private val activity: MainActivity) : GLSurfaceView.Renderer {
     private var surfaceWidth = 0
     private var surfaceHeight = 0
     private var anchor: Anchor? = null
+    // Dimensions captured from the detected vertical wall plane at placement time.
+    private var wallWidthMeters = 0f
+    private var wallHeightMeters = 0f
     private var lastStatus = ""
     private var trackingSinceMs = 0L
     private var pausedSinceMs = 0L
@@ -75,6 +78,8 @@ class ArRenderer(private val activity: MainActivity) : GLSurfaceView.Renderer {
     fun clearSession() {
         anchor?.detach()
         anchor = null
+        wallWidthMeters = 0f
+        wallHeightMeters = 0f
         session = null
     }
 
@@ -91,6 +96,8 @@ class ArRenderer(private val activity: MainActivity) : GLSurfaceView.Renderer {
     fun clearWallpaper() {
         anchor?.detach()
         anchor = null
+        wallWidthMeters = 0f
+        wallHeightMeters = 0f
         placementRequested = false
         activity.setArStatus("Наведіть камеру на стіну та натисніть на екран")
     }
@@ -141,6 +148,7 @@ class ArRenderer(private val activity: MainActivity) : GLSurfaceView.Renderer {
         try {
             val frame = s.update()
             drawCamera(frame)
+            updateStableTrackingStatus(frame.camera)
 
             // ARCore can briefly switch between TRACKING and PAUSED while
             // refining the pose. Do not expose those frame-to-frame changes
@@ -200,12 +208,29 @@ class ArRenderer(private val activity: MainActivity) : GLSurfaceView.Renderer {
     }
 
     private fun autoPlaceDetectedWall(frame: Frame) {
-        val wallPlane = sTrackedVerticalPlanes(frame).maxByOrNull { it.extentX * it.extentZ }
+        // Prefer the vertical plane directly under the screen reticle. This prevents
+        // ARCore from selecting a different wall simply because it is larger.
+        val centerX = surfaceWidth / 2f
+        val centerY = surfaceHeight / 2f
+        val hitPlane = frame.hitTest(centerX, centerY).firstOrNull { hit ->
+            val plane = hit.trackable as? Plane
+            plane != null &&
+                plane.trackingState == TrackingState.TRACKING &&
+                plane.type == Plane.Type.VERTICAL &&
+                plane.isPoseInPolygon(hit.hitPose)
+        }?.trackable as? Plane
+
+        val wallPlane = hitPlane ?: sTrackedVerticalPlanes(frame)
+            .filter { calculateDistanceToPlane(it.centerPose, frame.camera.getPose()) > 0f }
+            .maxByOrNull { it.extentX * it.extentZ }
             ?: return
+
         if (wallPlane.extentX < 0.5f || wallPlane.extentZ < 0.5f) return
         anchor?.detach()
         anchor = wallPlane.createAnchor(wallPlane.centerPose)
-        activity.setArStatus("Стіна знайдена ✓")
+        wallWidthMeters = wallPlane.extentX
+        wallHeightMeters = wallPlane.extentZ
+        activity.setArStatus("Стіна знайдена ✓ — шпалери розміщено")
     }
 
     private fun placeFromHitTest(frame: Frame, x: Float, y: Float) {
@@ -231,6 +256,8 @@ class ArRenderer(private val activity: MainActivity) : GLSurfaceView.Renderer {
             if (wallPlane != null) {
                 anchor?.detach()
                 anchor = wallPlane.createAnchor(wallPlane.centerPose)
+                wallWidthMeters = wallPlane.extentX
+                wallHeightMeters = wallPlane.extentZ
                 activity.setArStatus("Стіна знайдена ✓  • шпалери розміщено")
                 return
             }
@@ -255,6 +282,8 @@ class ArRenderer(private val activity: MainActivity) : GLSurfaceView.Renderer {
             if (instantHit != null) {
                 anchor?.detach()
                 anchor = instantHit.createAnchor()
+                wallWidthMeters = 2.0f
+                wallHeightMeters = 2.7f
                 activity.setArStatus("Шпалери розміщено • калібрую поверхню…")
                 return
             }
@@ -267,6 +296,9 @@ class ArRenderer(private val activity: MainActivity) : GLSurfaceView.Renderer {
 
         anchor?.detach()
         anchor = selectedHit.createAnchor()
+        val hitPlane = selectedHit.trackable as? Plane
+        wallWidthMeters = hitPlane?.extentX?.takeIf { it > 0.5f } ?: 2.0f
+        wallHeightMeters = hitPlane?.extentZ?.takeIf { it > 0.5f } ?: 2.7f
         activity.setArStatus("Шпалери розміщено ✓")
     }
 
@@ -378,29 +410,32 @@ class ArRenderer(private val activity: MainActivity) : GLSurfaceView.Renderer {
         frame.camera.getProjectionMatrix(projectionMatrix, 0, 0.01f, 100f)
         a.pose.toMatrix(modelMatrix, 0)
 
-        // ARCore vertical-plane poses use local X/Y as the wall surface;
-        // local Z is the surface normal. Using X/Z here would put the
-        // wallpaper on a horizontal plane (ceiling/floor), which was the
-        // previous orientation bug.
-        val halfWidth = 1.20f
-        val height = 2.70f
-        val normalOffset = 0.008f
+        // ARCore plane coordinates are X/Z on the plane; Y is the plane normal.
+        // The previous implementation used X/Y, which made a vertical wall
+        // render as a skewed/rotated rectangle (visible in the supplied video).
+        // Match the detected wall's actual dimensions instead of using a fixed
+        // 2.4 x 2.7 m quad that could spill outside the wall.
+        val width = (wallWidthMeters.takeIf { it > 0.5f } ?: 2.0f) * 0.98f
+        val height = (wallHeightMeters.takeIf { it > 0.5f } ?: 2.7f) * 0.98f
+        val halfWidth = width / 2f
+        val halfHeight = height / 2f
+        val normalOffset = 0.006f
 
         wallVertices[0] = -halfWidth
-        wallVertices[1] = -height / 2f
-        wallVertices[2] = normalOffset
+        wallVertices[1] = normalOffset
+        wallVertices[2] = -halfHeight
         wallVertices[3] = halfWidth
-        wallVertices[4] = -height / 2f
-        wallVertices[5] = normalOffset
+        wallVertices[4] = normalOffset
+        wallVertices[5] = -halfHeight
         wallVertices[6] = -halfWidth
-        wallVertices[7] = height / 2f
-        wallVertices[8] = normalOffset
+        wallVertices[7] = normalOffset
+        wallVertices[8] = halfHeight
         wallVertices[9] = halfWidth
-        wallVertices[10] = height / 2f
-        wallVertices[11] = normalOffset
+        wallVertices[10] = normalOffset
+        wallVertices[11] = halfHeight
 
-        val repeatX = 2.4f / 0.55f
-        val repeatY = 2.7f / 0.55f
+        val repeatX = width / 0.55f
+        val repeatY = height / 0.55f
         wallTexCoords[0] = 0f
         wallTexCoords[1] = repeatY
         wallTexCoords[2] = repeatX
