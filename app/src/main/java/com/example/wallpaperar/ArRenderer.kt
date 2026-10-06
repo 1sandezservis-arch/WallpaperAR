@@ -221,7 +221,6 @@ class ArRenderer(private val activity: MainActivity) : GLSurfaceView.Renderer {
         }?.trackable as? Plane
 
         val wallPlane = hitPlane ?: sTrackedVerticalPlanes(frame)
-            .filter { calculateDistanceToPlane(it.centerPose, frame.camera.getPose()) > 0f }
             .maxByOrNull { it.extentX * it.extentZ }
             ?: return
 
